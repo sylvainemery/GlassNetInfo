@@ -1,40 +1,31 @@
 package com.hackncheese.glassnetinfo;
 
-import com.google.android.glass.media.Sounds;
-import com.google.android.glass.widget.CardBuilder;
-import com.google.android.glass.widget.CardScrollAdapter;
-import com.google.android.glass.widget.CardScrollView;
-
 import android.app.Activity;
 import android.content.Context;
 import android.media.AudioManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.text.format.Formatter;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 
+import com.google.android.glass.media.Sounds;
+import com.google.android.glass.widget.CardBuilder;
+import com.google.android.glass.widget.CardScrollAdapter;
+import com.google.android.glass.widget.CardScrollView;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
+
 import org.apache.http.conn.util.InetAddressUtils;
 
-import java.io.BufferedInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.HttpURLConnection;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.net.URL;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Hashtable;
-import java.util.List;
 
 /**
  * An {@link Activity} showing a tuggable "Hello World!" card.
@@ -47,6 +38,9 @@ import java.util.List;
  * @see <a href="https://developers.google.com/glass/develop/gdk/touch">GDK Developer Guide</a>
  */
 public class MainActivity extends Activity {
+
+    // for logs
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     /**
      * {@link CardScrollView} to use as the main content view.
@@ -123,24 +117,6 @@ public class MainActivity extends Activity {
     private View buildView() {
         StringBuilder txt = new StringBuilder();
         CardBuilder card = new CardBuilder(this, CardBuilder.Layout.TEXT);
-/*
-        WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
-        WifiInfo wi = wm.getConnectionInfo();
-        int ip = wi.getIpAddress();
-        String ipStr = String.format("%d.%d.%d.%d", (ip & 0xff), (ip >> 8 & 0xff), (ip >> 16 & 0xff), (ip >> 24 & 0xff));
-        String w_ssid = wi.getSSID();
-        String w_mac = wi.getMacAddress();
-
-        String txt = String.format("%s%n%s%n%s", ipStr, w_mac, w_ssid);
-
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        NetworkInfo ni = cm.getActiveNetworkInfo();
-        String type = ni.getTypeName();
-        String subtype = ni.getSubtypeName();
-        boolean isconnected = ni.isConnected();
-        String extra = ni.getExtraInfo();
-        String txt = String.format("%s%n%s%n%s%n%s", type, subtype, isconnected, extra);
-*/
 
         Hashtable<String, String> ips = getLocalIpAddresses();
         ips.put("ext", getExternalIpAddress());
@@ -155,17 +131,16 @@ public class MainActivity extends Activity {
     }
 
 
-
     public Hashtable<String, String> getLocalIpAddresses() {
         NetworkInterface intf;
         String address;
         Hashtable<String, String> h = new Hashtable<String, String>();
 
         try {
-            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
                 intf = en.nextElement();
 
-                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
                     InetAddress inetAddress = enumIpAddr.nextElement();
                     address = inetAddress.getHostAddress();
 
@@ -175,48 +150,27 @@ public class MainActivity extends Activity {
                 }
             }
         } catch (SocketException ex) {
-            Log.e("netinfo", ex.toString());
+            Log.e(TAG, ex.getMessage());
         }
 
         return h;
     }
 
     public String getExternalIpAddress() {
-        String ip = "";
-        InputStream in = null;
+        OkHttpClient client = new OkHttpClient();
+        String ip = "n/a";
 
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        NetworkInfo ni = cm.getActiveNetworkInfo();
-        if (ni != null && ni.isConnected()) {
-            try {
-                URL url = new URL("http://whatismyip.akamai.com");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setReadTimeout(1000);
-                conn.setConnectTimeout(1000);
-                conn.setRequestMethod("GET");
-                in = conn.getInputStream();
-                Reader r = new InputStreamReader(in, "UTF-8");
-                char[] buffer = new char[20];
-                r.read(buffer);
-                ip = new String(buffer);
-            } catch(Exception e) {
-                Log.e("getext", e.toString());
-                ip = "error";
-            } finally {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch(Exception e) {
+        Request request = new Request.Builder()
+                .url(getString(R.string.url))
+                .build();
 
-                    }
-                }
-
-            }
+        try {
+            Response response = client.newCall(request).execute();
+            ip = response.body().string();
+        } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
         }
-        else {
-            ip = "n/a";
-        }
-
         return ip;
+
     }
 }
