@@ -60,6 +60,7 @@ public class MainActivity extends Activity {
     private Slider.Indeterminate mIndSlider;
 
     private GetExternalIPTask mExtTask;
+    private GetExternalIPInfoTask mExtInfoTask;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -105,6 +106,11 @@ public class MainActivity extends Activity {
         // cancel the async task if it exists
         if (mExtTask != null) {
             mExtTask.cancel(true); // true = force interruption
+        }
+
+        // cancel the async task if it exists
+        if (mExtInfoTask != null) {
+            mExtInfoTask.cancel(true); // true = force interruption
         }
 
         super.onPause();
@@ -183,6 +189,33 @@ public class MainActivity extends Activity {
 
     }
 
+    public String getExternalIpInfoAddress(String ip) {
+        OkHttpClient client = new OkHttpClient();
+        String NetworkProviderName = ip;
+
+        // don't wait more than 3 seconds total
+        client.setConnectTimeout(1000, TimeUnit.MILLISECONDS);
+        client.setWriteTimeout(1000, TimeUnit.MILLISECONDS);
+        client.setReadTimeout(1000, TimeUnit.MILLISECONDS);
+
+        Request request = new Request.Builder()
+                .url(String.format("http://ipinfo.io/%s/org", ip))
+                .build();
+
+        try {
+            Response response = client.newCall(request).execute();
+            String resp = response.body().string();
+            int idx = resp.indexOf(" ");
+            if (idx > 0) {
+                NetworkProviderName = resp.substring(idx, resp.length()).trim();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
+        }
+        return NetworkProviderName;
+
+    }
+
     private class GetExternalIPTask extends AsyncTask<Void, Void, String> {
         @Override
         protected String doInBackground(Void... p) {
@@ -202,6 +235,39 @@ public class MainActivity extends Activity {
             }
             // add external ip to the list
             ips.put("ext", ip);
+            // update the card info
+            updateCard();
+            // notify that the card UI must be redrawn
+            mCardAdapter.notifyDataSetChanged();
+            // play a nice sound
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            am.playSoundEffect(Sounds.SUCCESS);
+
+            // get more info on the external IP
+            mExtInfoTask = new GetExternalIPInfoTask();
+            mExtInfoTask.execute(ip);
+
+        }
+    }
+    private class GetExternalIPInfoTask extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... ip) {
+            return getExternalIpInfoAddress(ip[0]);
+        }
+
+        protected void onPreExecute() {
+            // show progress bar
+            mIndSlider = mSlider.startIndeterminate();
+        }
+
+        protected void onPostExecute(String networkProviderName) {
+            // hide the progress bar
+            if (mIndSlider != null) {
+                mIndSlider.hide();
+                mIndSlider = null;
+            }
+            // add external ip to the list
+            ips.put("provider", networkProviderName);
             // update the card info
             updateCard();
             // notify that the card UI must be redrawn
