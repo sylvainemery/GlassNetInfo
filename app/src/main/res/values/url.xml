@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="url">http://whatismyip.akamai.com</string>
+    <!-- slow one for tests
+    <string name="url">http://ifconfig.me/ip</string>
+    -->
 </resources>
