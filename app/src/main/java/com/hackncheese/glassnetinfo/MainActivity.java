@@ -3,6 +3,8 @@ package com.hackncheese.glassnetinfo;
 import android.app.Activity;
 import android.content.Context;
 import android.media.AudioManager;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -124,6 +126,8 @@ public class MainActivity extends Activity {
 
         ips = getLocalIpAddresses();
 
+        ips.put("ssid", getConnectedSSID());
+
         updateCard();
 
         cards.add(mCard);
@@ -164,6 +168,21 @@ public class MainActivity extends Activity {
         }
 
         return h;
+    }
+
+    public String getConnectedSSID() {
+        WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
+        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+        String ssid = wifiInfo.getSSID();
+
+        if (ssid == null) {
+            ssid = "n/a";
+        }
+        else if (ssid.startsWith("\"") && ssid.endsWith("\"")) {
+            ssid = ssid.substring(1, ssid.length()-1);
+        }
+
+        return ssid;
     }
 
     public String getExternalIpAddress() {
