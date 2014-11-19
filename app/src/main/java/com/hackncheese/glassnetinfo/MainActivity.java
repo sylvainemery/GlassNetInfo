@@ -29,14 +29,7 @@ import java.util.Hashtable;
 import java.util.concurrent.TimeUnit;
 
 /**
- * An {@link Activity} showing a tuggable "Hello World!" card.
- * <p/>
- * The main content view is composed of a one-card {@link CardScrollView} that provides tugging
- * feedback to the user when swipe gestures are detected.
- * If your Glassware intends to intercept swipe gestures, you should set the content view directly
- * and use a {@link com.google.android.glass.touchpad.GestureDetector}.
- *
- * @see <a href="https://developers.google.com/glass/develop/gdk/touch">GDK Developer Guide</a>
+ * The main activity: retrieve network info and display it in a card
  */
 public class MainActivity extends Activity {
 
@@ -51,6 +44,8 @@ public class MainActivity extends Activity {
 
     /**
      * Contains all the info collected about the network state
+     * I think we need a {@link Hashtable} because it is synchronized
+     * and we will insert new entries in several threads.
      */
     private Hashtable<String, String> mInfoTable = new Hashtable<String, String>();
 
@@ -87,17 +82,16 @@ public class MainActivity extends Activity {
         super.onResume();
         mCardScroller.activate();
 
-        // get all the local ip addresses
-        //mInfoTable.putAll(getLocalIpAddresses());
-
         //get the local wlan ip address
         String wlanIPAddress = getWlanIPAddress();
 
         if (wlanIPAddress != null) {
+            // we have an IP address, use it
             mInfoTable.put("wlan0", wlanIPAddress);
             // add the ssid we are connected to
             mInfoTable.put("ssid", getConnectedSSID());
         } else {
+            // no IP address on wlan0, meaning we are not connected to WiFi
             mInfoTable.put("wlan0", getString(R.string.wlan_na));
             mInfoTable.put("ssid", getString(R.string.ssid_na));
         }
@@ -189,6 +183,11 @@ public class MainActivity extends Activity {
         return ssid;
     }
 
+    /**
+     * Retrieves the content of a URL
+     * @param url : the url of the web page
+     * @return the content as a {@link String}
+     */
     private String getDataFromUrl(String url) {
         OkHttpClient client = new OkHttpClient();
         String result = getString(R.string.http_response_na);
@@ -213,6 +212,9 @@ public class MainActivity extends Activity {
         return result;
     }
 
+    /**
+     * an AsyncTask that will fetch the content of a "whatismyip" service, giving us our external IP address
+     */
     private class GetExternalIPTask extends AsyncTask<Void, Void, String> {
         @Override
         protected String doInBackground(Void... p) {
@@ -231,6 +233,7 @@ public class MainActivity extends Activity {
                 mIndSlider.hide();
                 mIndSlider = null;
             }
+
             // add external ip to the list
             mInfoTable.put("ext", ip);
 
@@ -250,6 +253,9 @@ public class MainActivity extends Activity {
         }
     }
 
+    /**
+     * an AsyncTask that will fetch the content of an "ip info" service, giving us the provider of our external IP
+     */
     private class GetExternalIPInfoTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... ip) {
