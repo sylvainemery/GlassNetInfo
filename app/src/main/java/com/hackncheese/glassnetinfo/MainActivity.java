@@ -14,7 +14,6 @@ import android.widget.AdapterView;
 import com.google.android.glass.media.Sounds;
 import com.google.android.glass.widget.CardScrollView;
 import com.google.android.glass.widget.Slider;
-
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -50,7 +49,10 @@ public class MainActivity extends Activity {
     private CardScrollView mCardScroller;
 
 
-    private Hashtable<String, String> ips;
+    /**
+     * Contains all the info collected about the network state
+     */
+    private Hashtable<String, String> mInfoTable = new Hashtable<String, String>();
 
     private CardAdapter mCardAdapter;
     private Slider mSlider;
@@ -63,11 +65,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
 
-        ips = getLocalIpAddresses();
-
-        ips.put("ssid", getConnectedSSID());
-
-        mCardAdapter = new CardAdapter(this, ips);
+        mCardAdapter = new CardAdapter(this, mInfoTable);
         mCardScroller = new CardScrollView(this);
         mCardScroller.setAdapter(mCardAdapter);
         // Handle the TAP event.
@@ -88,6 +86,15 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         mCardScroller.activate();
+
+        // get all the local ip addresses
+        mInfoTable.putAll(getLocalIpAddresses());
+
+        // add the ssid we are connected to
+        mInfoTable.put("ssid", getConnectedSSID());
+
+        // notify that the card UI must be redrawn
+        mCardAdapter.notifyDataSetChanged();
 
         // get the external IP
         mExtTask = new GetExternalIPTask();
@@ -117,19 +124,27 @@ public class MainActivity extends Activity {
         super.onPause();
     }
 
+    /**
+     * Loop through al the network interfaces and IP address to get only the local IPv4 ones
+     *
+     * @return a {@link Hashtable} with the network interface name as key and the IP address as value
+     */
     public Hashtable<String, String> getLocalIpAddresses() {
         NetworkInterface intf;
         String address;
         Hashtable<String, String> h = new Hashtable<String, String>();
 
         try {
+            // go through all the network interfaces
             for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
                 intf = en.nextElement();
 
+                // for each interface, go through all its IP addresses
                 for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
                     InetAddress inetAddress = enumIpAddr.nextElement();
                     address = inetAddress.getHostAddress();
 
+                    // get only local IPv4 address that are not loopback
                     if (!inetAddress.isLoopbackAddress() && InetAddressUtils.isIPv4Address(address)) {
                         h.put(intf.getName(), address);
                     }
@@ -142,25 +157,29 @@ public class MainActivity extends Activity {
         return h;
     }
 
+    /**
+     * Get the SSID we are currently connected to
+     *
+     * @return the SSID name
+     */
     public String getConnectedSSID() {
         WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         String ssid = wifiInfo.getSSID();
-        // TODO: add " (connecting)" if the wifi is in a connecting state
 
         if (ssid == null || ssid.equals("0x")) {
             ssid = "n/a";
-        }
-        else if (ssid.startsWith("\"") && ssid.endsWith("\"")) {
-            ssid = ssid.substring(1, ssid.length()-1);
+        } else if (ssid.startsWith("\"") && ssid.endsWith("\"")) {
+            // ssid is often returned with surrounding double quotation marks. We take them off.
+            ssid = ssid.substring(1, ssid.length() - 1);
         }
 
         return ssid;
     }
 
-    public String getExternalIpAddress() {
+    public String getDataFromUrl(String url) {
         OkHttpClient client = new OkHttpClient();
-        String ip = "n/a";
+        String result = getString(R.string.http_response_na);
 
         // don't wait more than 3 seconds total
         client.setConnectTimeout(1000, TimeUnit.MILLISECONDS);
@@ -168,50 +187,25 @@ public class MainActivity extends Activity {
         client.setReadTimeout(1000, TimeUnit.MILLISECONDS);
 
         Request request = new Request.Builder()
-                .url(getString(R.string.url))
+                .url(url)
                 .build();
 
         try {
             Response response = client.newCall(request).execute();
-            ip = response.body().string();
+            result = response.body().string();
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
+            result = getString(R.string.http_response_timeout);
         }
-        return ip;
-
-    }
-
-    public String getExternalIpInfoAddress(String ip) {
-        OkHttpClient client = new OkHttpClient();
-        String NetworkProviderName = ip;
-
-        // don't wait more than 3 seconds total
-        client.setConnectTimeout(1000, TimeUnit.MILLISECONDS);
-        client.setWriteTimeout(1000, TimeUnit.MILLISECONDS);
-        client.setReadTimeout(1000, TimeUnit.MILLISECONDS);
-
-        Request request = new Request.Builder()
-                .url(String.format("http://ipinfo.io/%s/org", ip))
-                .build();
-
-        try {
-            Response response = client.newCall(request).execute();
-            String resp = response.body().string();
-            int idx = resp.indexOf(" ");
-            if (idx > 0) {
-                NetworkProviderName = resp.substring(idx, resp.length()).trim();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, e.getMessage());
-        }
-        return NetworkProviderName;
+        return result;
 
     }
 
     private class GetExternalIPTask extends AsyncTask<Void, Void, String> {
         @Override
         protected String doInBackground(Void... p) {
-            return getExternalIpAddress();
+            String extIp = getDataFromUrl(getString(R.string.url_ip));
+            return extIp;
         }
 
         protected void onPreExecute() {
@@ -226,23 +220,33 @@ public class MainActivity extends Activity {
                 mIndSlider = null;
             }
             // add external ip to the list
-            ips.put("ext", ip);
+            mInfoTable.put("ext", ip);
+
+            if (!ip.equals(getString(R.string.http_response_na)) && !ip.equals(getString(R.string.http_response_timeout))) {
+                // get more info on the external IP
+                mExtInfoTask = new GetExternalIPInfoTask();
+                mExtInfoTask.execute(ip);
+            } else {
+                mInfoTable.put("provider", getString(R.string.http_response_na));
+            }
+
             // notify that the card UI must be redrawn
             mCardAdapter.notifyDataSetChanged();
             // play a nice sound
             AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
             am.playSoundEffect(Sounds.SUCCESS);
-
-            // get more info on the external IP
-            mExtInfoTask = new GetExternalIPInfoTask();
-            mExtInfoTask.execute(ip);
-
         }
     }
+
     private class GetExternalIPInfoTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... ip) {
-            return getExternalIpInfoAddress(ip[0]);
+            String networkProviderName = getDataFromUrl(getString(R.string.url_provider_name, ip[0]));
+            int idx = networkProviderName.indexOf(" ");
+            if (idx > 0) {
+                networkProviderName = networkProviderName.substring(idx, networkProviderName.length()).trim();
+            }
+            return networkProviderName;
         }
 
         protected void onPreExecute() {
@@ -257,7 +261,7 @@ public class MainActivity extends Activity {
                 mIndSlider = null;
             }
             // add external ip to the list
-            ips.put("provider", networkProviderName);
+            mInfoTable.put("provider", networkProviderName);
             // notify that the card UI must be redrawn
             mCardAdapter.notifyDataSetChanged();
             // play a nice sound

@@ -2,12 +2,17 @@
 <resources>
 
     <string name="app_name">GlassNetInfo</string>
-    <string name="title_activity_main">Show Net Info</string>
+    <string name="title_activity_main">Show Network Info</string>
 
     <string name="glass_voice_trigger">Show network info</string>
 
-    <string name="wifi">WiFi</string>
-    <string name="ext">Ext</string>
+    <string name="wifi_label">WiFi</string>
+    <string name="ext_label">Ext</string>
     <string name="retrieving">retrieving&#8230;</string>
+
+    <string name="ssid_na">n/a</string>
+
+    <string name="http_response_na">n/a</string>
+    <string name="http_response_timeout">(timed out)</string>
 
 </resources>

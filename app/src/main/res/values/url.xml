@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="url">http://whatismyip.akamai.com</string>
+    <string name="url_ip">http://whatismyip.akamai.com</string>
     <!-- slow one for tests
-    <string name="url">http://ifconfig.me/ip</string>
+    <string name="url_ip">http://ifconfig.me/ip</string>
     -->
+
+    <string name="url_provider_name">http://ipinfo.io/%1$s/org</string>
+
 </resources>
