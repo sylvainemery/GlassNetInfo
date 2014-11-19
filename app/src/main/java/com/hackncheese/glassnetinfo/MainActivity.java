@@ -88,10 +88,19 @@ public class MainActivity extends Activity {
         mCardScroller.activate();
 
         // get all the local ip addresses
-        mInfoTable.putAll(getLocalIpAddresses());
+        //mInfoTable.putAll(getLocalIpAddresses());
 
-        // add the ssid we are connected to
-        mInfoTable.put("ssid", getConnectedSSID());
+        //get the local wlan ip address
+        String wlanIPAddress = getWlanIPAddress();
+
+        if (wlanIPAddress != null) {
+            mInfoTable.put("wlan0", wlanIPAddress);
+            // add the ssid we are connected to
+            mInfoTable.put("ssid", getConnectedSSID());
+        } else {
+            mInfoTable.put("wlan0", getString(R.string.wlan_na));
+            mInfoTable.put("ssid", getString(R.string.ssid_na));
+        }
 
         // notify that the card UI must be redrawn
         mCardAdapter.notifyDataSetChanged();
@@ -99,7 +108,6 @@ public class MainActivity extends Activity {
         // get the external IP
         mExtTask = new GetExternalIPTask();
         mExtTask.execute();
-
     }
 
     @Override
@@ -125,36 +133,40 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Loop through al the network interfaces and IP address to get only the local IPv4 ones
+     * Loop through all the network interfaces to find the wlan interface
+     * and retrieve the local IPv4 address
      *
-     * @return a {@link Hashtable} with the network interface name as key and the IP address as value
+     * @return the IP address
      */
-    public Hashtable<String, String> getLocalIpAddresses() {
+    private String getWlanIPAddress() {
         NetworkInterface intf;
         String address;
-        Hashtable<String, String> h = new Hashtable<String, String>();
 
         try {
             // go through all the network interfaces
             for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
                 intf = en.nextElement();
 
-                // for each interface, go through all its IP addresses
-                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
-                    InetAddress inetAddress = enumIpAddr.nextElement();
-                    address = inetAddress.getHostAddress();
+                if (intf.getName().equals("wlan0")) {
 
-                    // get only local IPv4 address that are not loopback
-                    if (!inetAddress.isLoopbackAddress() && InetAddressUtils.isIPv4Address(address)) {
-                        h.put(intf.getName(), address);
+                    // go through all its IP addresses
+                    for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                        InetAddress inetAddress = enumIpAddr.nextElement();
+                        address = inetAddress.getHostAddress();
+
+                        // get only local IPv4 address that are not loopback
+                        if (!inetAddress.isLoopbackAddress() && InetAddressUtils.isIPv4Address(address)) {
+                            return address;
+                        }
                     }
+
                 }
             }
         } catch (SocketException ex) {
             Log.e(TAG, ex.getMessage());
         }
 
-        return h;
+        return null;
     }
 
     /**
@@ -162,7 +174,7 @@ public class MainActivity extends Activity {
      *
      * @return the SSID name
      */
-    public String getConnectedSSID() {
+    private String getConnectedSSID() {
         WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         String ssid = wifiInfo.getSSID();
@@ -177,7 +189,7 @@ public class MainActivity extends Activity {
         return ssid;
     }
 
-    public String getDataFromUrl(String url) {
+    private String getDataFromUrl(String url) {
         OkHttpClient client = new OkHttpClient();
         String result = getString(R.string.http_response_na);
 
@@ -194,11 +206,11 @@ public class MainActivity extends Activity {
             Response response = client.newCall(request).execute();
             result = response.body().string();
         } catch (IOException e) {
-            Log.e(TAG, e.getMessage());
+            Log.e(TAG, String.format("timed out while trying to get data from url %s", url));
             result = getString(R.string.http_response_timeout);
         }
-        return result;
 
+        return result;
     }
 
     private class GetExternalIPTask extends AsyncTask<Void, Void, String> {
@@ -262,6 +274,7 @@ public class MainActivity extends Activity {
             }
             // add external ip to the list
             mInfoTable.put("provider", networkProviderName);
+
             // notify that the card UI must be redrawn
             mCardAdapter.notifyDataSetChanged();
             // play a nice sound

@@ -10,6 +10,7 @@
     <string name="ext_label">Ext</string>
     <string name="retrieving">retrieving&#8230;</string>
 
+    <string name="wlan_na">n/a</string>
     <string name="ssid_na">n/a</string>
 
     <string name="http_response_na">n/a</string>
