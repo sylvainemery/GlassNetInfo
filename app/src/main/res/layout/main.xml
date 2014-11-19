@@ -10,76 +10,82 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/RowWifi">
+        android:id="@+id/rowWifiIP">
 
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="fill_parent"
+        <TextView
+            android:layout_width="@dimen/left_column_width"
             android:layout_height="fill_parent"
-            android:id="@+id/ColumnsWifi">
+            android:text="@string/wifi_ip_label"
+            android:id="@+id/textViewWifiIPLabel" />
 
-            <TextView
-                android:layout_width="70dp"
-                android:layout_height="fill_parent"
-                android:text="@string/wifi_label"
-                android:id="@+id/textViewWifiLabel" />
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/retrieving"
+            android:id="@+id/textViewWifiIP" />
 
-            <LinearLayout
-                android:orientation="vertical"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/retrieving"
-                    android:id="@+id/textViewWifiIP" />
-
-                <TextView
-                    android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/retrieving"
-                    android:id="@+id/textViewWifiSSID" />
-
-            </LinearLayout>
-        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/RowExt">
+        android:id="@+id/rowWifiSSID"
+        android:visibility="invisible">
 
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="fill_parent"
+        <TextView
+            android:layout_width="@dimen/left_column_width"
             android:layout_height="fill_parent"
-            android:id="@+id/ColumnsExt">
+            android:text="@string/wifi_ssid_label"
+            android:id="@+id/textViewWifiSSIDLabel" />
 
-            <TextView
-                android:layout_width="70dp"
-                android:layout_height="wrap_content"
-                android:text="@string/ext_label"
-                android:id="@+id/textViewExtLabel" />
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/retrieving"
+            android:id="@+id/textViewWifiSSID" />
 
-            <LinearLayout
-                android:orientation="vertical"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/retrieving"
-                    android:id="@+id/textViewExtIP" />
-
-                <TextView
-                    android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/retrieving"
-                    android:id="@+id/textViewExtProvider" />
-            </LinearLayout>
-        </LinearLayout>
     </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/rowExtIP">
+
+        <TextView
+            android:layout_width="@dimen/left_column_width"
+            android:layout_height="fill_parent"
+            android:text="@string/ext_ip_label"
+            android:id="@+id/textViewExtIPLabel" />
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/retrieving"
+            android:id="@+id/textViewExtIP" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/rowExtProvider"
+        android:visibility="invisible">
+
+        <TextView
+            android:layout_width="@dimen/left_column_width"
+            android:layout_height="fill_parent"
+            android:text="@string/ext_provider_label"
+            android:id="@+id/textViewExtProviderLabel" />
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/retrieving"
+            android:id="@+id/textViewExtProvider" />
+
+    </LinearLayout>
+
 </LinearLayout>

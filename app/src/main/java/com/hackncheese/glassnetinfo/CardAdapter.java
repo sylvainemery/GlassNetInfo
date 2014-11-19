@@ -62,6 +62,7 @@ public class CardAdapter extends CardScrollAdapter {
 
         String wifiSSID = mInfoTable.get("ssid");
         if (wifiSSID != null) {
+            view.findViewById(R.id.rowWifiSSID).setVisibility(View.VISIBLE);
             TextView textViewWifiSSID = (TextView) view.findViewById(R.id.textViewWifiSSID);
             textViewWifiSSID.setText(wifiSSID);
         }
@@ -74,6 +75,7 @@ public class CardAdapter extends CardScrollAdapter {
 
         String extProvider = mInfoTable.get("provider");
         if (extProvider != null) {
+            view.findViewById(R.id.rowExtProvider).setVisibility(View.VISIBLE);
             TextView textViewExtProvider = (TextView) view.findViewById(R.id.textViewExtProvider);
             textViewExtProvider.setText(extProvider);
         }

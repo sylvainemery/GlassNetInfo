@@ -93,7 +93,6 @@ public class MainActivity extends Activity {
         } else {
             // no IP address on wlan0, meaning we are not connected to WiFi
             mInfoTable.put("wlan0", getString(R.string.wlan_na));
-            mInfoTable.put("ssid", getString(R.string.ssid_na));
         }
 
         // notify that the card UI must be redrawn
@@ -237,19 +236,18 @@ public class MainActivity extends Activity {
             // add external ip to the list
             mInfoTable.put("ext", ip);
 
-            if (!ip.equals(getString(R.string.http_response_na)) && !ip.equals(getString(R.string.http_response_timeout))) {
-                // get more info on the external IP
-                mExtInfoTask = new GetExternalIPInfoTask();
-                mExtInfoTask.execute(ip);
-            } else {
-                mInfoTable.put("provider", getString(R.string.http_response_na));
-            }
-
             // notify that the card UI must be redrawn
             mCardAdapter.notifyDataSetChanged();
             // play a nice sound
             AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
             am.playSoundEffect(Sounds.SUCCESS);
+
+            if (!ip.equals(getString(R.string.http_response_na)) && !ip.equals(getString(R.string.http_response_timeout))) {
+                // get more info on the external IP
+                mExtInfoTask = new GetExternalIPInfoTask();
+                mExtInfoTask.execute(ip);
+            }
+
         }
     }
 
@@ -268,6 +266,10 @@ public class MainActivity extends Activity {
         }
 
         protected void onPreExecute() {
+            // show that we are looking for the provider
+            mInfoTable.put("provider", getString(R.string.retrieving));
+            // notify that the card UI must be redrawn
+            mCardAdapter.notifyDataSetChanged();
             // show progress bar
             mIndSlider = mSlider.startIndeterminate();
         }

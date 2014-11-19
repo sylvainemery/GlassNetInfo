@@ -6,8 +6,10 @@
 
     <string name="glass_voice_trigger">Show network info</string>
 
-    <string name="wifi_label">WiFi</string>
-    <string name="ext_label">Ext</string>
+    <string name="wifi_ip_label">WiFi IP</string>
+    <string name="wifi_ssid_label">SSID</string>
+    <string name="ext_ip_label">Ext IP</string>
+    <string name="ext_provider_label">Provider</string>
     <string name="retrieving">retrieving&#8230;</string>
 
     <string name="wlan_na">n/a</string>
