@@ -12,8 +12,6 @@ import android.view.View;
 import android.widget.AdapterView;
 
 import com.google.android.glass.media.Sounds;
-import com.google.android.glass.sample.apidemo.card.CardAdapter;
-import com.google.android.glass.widget.CardBuilder;
 import com.google.android.glass.widget.CardScrollView;
 import com.google.android.glass.widget.Slider;
 
@@ -27,10 +25,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,7 +52,6 @@ public class MainActivity extends Activity {
 
     private Hashtable<String, String> ips;
 
-    private CardBuilder mCard;
     private CardAdapter mCardAdapter;
     private Slider mSlider;
     private Slider.Indeterminate mIndSlider;
@@ -68,7 +63,11 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
 
-        mCardAdapter = new CardAdapter(createCards(this));
+        ips = getLocalIpAddresses();
+
+        ips.put("ssid", getConnectedSSID());
+
+        mCardAdapter = new CardAdapter(this, ips);
         mCardScroller = new CardScrollView(this);
         mCardScroller.setAdapter(mCardAdapter);
         // Handle the TAP event.
@@ -118,33 +117,6 @@ public class MainActivity extends Activity {
         super.onPause();
     }
 
-    private List<CardBuilder> createCards(Context context) {
-        ArrayList<CardBuilder> cards = new ArrayList<CardBuilder>();
-
-
-        mCard = new CardBuilder(this, CardBuilder.Layout.TEXT);
-
-        ips = getLocalIpAddresses();
-
-        ips.put("ssid", getConnectedSSID());
-
-        updateCard();
-
-        cards.add(mCard);
-
-        return cards;
-    }
-
-    private void updateCard() {
-        StringBuilder txt = new StringBuilder();
-        for (Enumeration<String> es = ips.keys(); es.hasMoreElements(); ) {
-            String k = es.nextElement();
-            txt.append(k).append(": ").append(ips.get(k)).append("\n");
-        }
-
-        mCard.setText(txt);
-    }
-
     public Hashtable<String, String> getLocalIpAddresses() {
         NetworkInterface intf;
         String address;
@@ -174,8 +146,9 @@ public class MainActivity extends Activity {
         WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         String ssid = wifiInfo.getSSID();
+        // TODO: add " (connecting)" if the wifi is in a connecting state
 
-        if (ssid == null) {
+        if (ssid == null || ssid.equals("0x")) {
             ssid = "n/a";
         }
         else if (ssid.startsWith("\"") && ssid.endsWith("\"")) {
@@ -254,8 +227,6 @@ public class MainActivity extends Activity {
             }
             // add external ip to the list
             ips.put("ext", ip);
-            // update the card info
-            updateCard();
             // notify that the card UI must be redrawn
             mCardAdapter.notifyDataSetChanged();
             // play a nice sound
@@ -287,8 +258,6 @@ public class MainActivity extends Activity {
             }
             // add external ip to the list
             ips.put("provider", networkProviderName);
-            // update the card info
-            updateCard();
             // notify that the card UI must be redrawn
             mCardAdapter.notifyDataSetChanged();
             // play a nice sound

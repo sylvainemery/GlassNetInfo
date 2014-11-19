@@ -6,4 +6,8 @@
 
     <string name="glass_voice_trigger">Show network info</string>
 
+    <string name="wifi">WiFi</string>
+    <string name="ext">Ext</string>
+    <string name="retrieving">retrieving&#8230;</string>
+
 </resources>
