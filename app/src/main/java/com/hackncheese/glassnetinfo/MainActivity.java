@@ -2,6 +2,7 @@ package com.hackncheese.glassnetinfo;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -12,8 +13,6 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.AdapterView;
 
 import com.google.android.glass.media.Sounds;
 import com.google.android.glass.widget.CardScrollView;
@@ -95,7 +94,7 @@ public class MainActivity extends Activity {
                 updateInfo();
                 return true;
             case R.id.toggle_wifi:
-                /*startActivity(new Intent(this, ToggleWifiActivity.class));*/
+                startActivity(new Intent(this, ToggleWifiActivity.class));
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- to retrieve the SSID -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- to toggle WiFi state -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 
     <application
         android:allowBackup="true"
@@ -24,6 +26,11 @@
             <meta-data
                 android:name="com.google.android.glass.VoiceTrigger"
                 android:resource="@xml/voice_trigger" />
+        </activity>
+        <activity
+            android:name="com.hackncheese.glassnetinfo.ToggleWifiActivity"
+            android:icon="@drawable/ic_world_50"
+            android:label="@string/title_activity_toggle_wifi" >
         </activity>
     </application>
 
