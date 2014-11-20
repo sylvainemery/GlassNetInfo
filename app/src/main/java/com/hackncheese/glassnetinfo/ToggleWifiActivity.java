@@ -1,10 +1,5 @@
 package com.hackncheese.glassnetinfo;
 
-import com.google.android.glass.media.Sounds;
-import com.google.android.glass.widget.CardBuilder;
-import com.google.android.glass.widget.CardScrollAdapter;
-import com.google.android.glass.widget.CardScrollView;
-
 import android.app.Activity;
 import android.content.Context;
 import android.media.AudioManager;
@@ -14,23 +9,59 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 
+import com.google.android.glass.media.Sounds;
+import com.google.android.glass.widget.CardBuilder;
+import com.google.android.glass.widget.CardScrollAdapter;
+import com.google.android.glass.widget.CardScrollView;
+import com.google.android.glass.widget.Slider;
+import com.google.android.glass.widget.Slider.GracePeriod;
+
 /**
  * Toggles the WiFi state
  */
 public class ToggleWifiActivity extends Activity {
 
+    // for logs
+    private static final String TAG = ToggleWifiActivity.class.getSimpleName();
+
     private CardScrollView mCardScroller;
 
     private View mView;
 
+    private Slider mSlider;
+    private Slider.GracePeriod mGracePeriod;
+
     private boolean wifiState;
+
+    private final GracePeriod.Listener mGracePeriodListener = new GracePeriod.Listener() {
+        @Override
+        public void onGracePeriodEnd() {
+            mGracePeriod = null;
+            toggleWifiState();
+            mView = buildView();
+            mCardScroller.getAdapter().notifyDataSetChanged();
+            // Play a SUCCESS sound to indicate the end of the grace period.
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            am.playSoundEffect(Sounds.SUCCESS);
+        }
+
+        @Override
+        public void onGracePeriodCancel() {
+            mGracePeriod = null;
+            mView = buildView();
+            mCardScroller.getAdapter().notifyDataSetChanged();
+            // Play a DISMISS sound to indicate the cancellation of the grace period.
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            am.playSoundEffect(Sounds.DISMISSED);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
 
-        toggleWifiState();
-        mView = buildView();
+        WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
+        wifiState = wifiManager.isWifiEnabled();
 
         mCardScroller = new CardScrollView(this);
         mCardScroller.setAdapter(new CardScrollAdapter() {
@@ -61,20 +92,19 @@ public class ToggleWifiActivity extends Activity {
         mCardScroller.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                toggleWifiState();
+                mGracePeriod = Slider.from(parent).startGracePeriod(mGracePeriodListener);
                 mView = buildView();
                 mCardScroller.getAdapter().notifyDataSetChanged();
-                // play a nice sound
                 AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                am.playSoundEffect(Sounds.SUCCESS);
+                am.playSoundEffect(Sounds.TAP);
             }
         });
         setContentView(mCardScroller);
 
-        // play a nice sound
-        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        am.playSoundEffect(Sounds.SUCCESS);
+        mSlider = Slider.from(mCardScroller);
+        mGracePeriod = mSlider.startGracePeriod(mGracePeriodListener);
 
+        mView = buildView();
     }
 
     @Override
@@ -86,7 +116,24 @@ public class ToggleWifiActivity extends Activity {
     @Override
     protected void onPause() {
         mCardScroller.deactivate();
+
+        // hide the grace period slider, if it was showing
+        if (mGracePeriod != null) {
+            mGracePeriod.cancel();
+            mGracePeriod = null;
+        }
+
         super.onPause();
+    }
+
+    @Override
+    public void onBackPressed() {
+        // If the Grace Period is running, cancel it instead of finishing the Activity.
+        if (mGracePeriod != null) {
+            mGracePeriod.cancel();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     /**
@@ -102,16 +149,30 @@ public class ToggleWifiActivity extends Activity {
      * Builds a Glass styled view showing the WiFi state.
      */
     private View buildView() {
-        CardBuilder card = new CardBuilder(this, CardBuilder.Layout.TEXT);
+        CardBuilder card = new CardBuilder(this, CardBuilder.Layout.MENU);
 
         String txt;
-        if (wifiState) {
-            txt = "WiFi is now enabled";
+        String footnote;
+
+        if (mGracePeriod != null) {
+            if (wifiState) {
+                txt = "Turning WiFi off";
+            } else {
+                txt = "Turning WiFi on";
+            }
+            footnote = "Dismiss to cancel";
         } else {
-            txt = "WiFi is now disabled";
+            if (wifiState) {
+                txt = "WiFi is enabled";
+                footnote = "Tap to turn off";
+            } else {
+                txt = "WiFi is disabled";
+                footnote = "Tap to turn on";
+            }
         }
 
         card.setText(txt);
+        card.setFootnote(footnote);
         return card.getView();
     }
 
