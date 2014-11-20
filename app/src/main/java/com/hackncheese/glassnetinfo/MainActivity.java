@@ -8,6 +8,10 @@ import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 
@@ -63,18 +67,39 @@ public class MainActivity extends Activity {
         mCardAdapter = new CardAdapter(this, mInfoTable);
         mCardScroller = new CardScrollView(this);
         mCardScroller.setAdapter(mCardAdapter);
-        // Handle the TAP event.
-        mCardScroller.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // Plays disallowed sound to indicate that TAP actions are not supported.
-                AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                am.playSoundEffect(Sounds.DISALLOWED);
-            }
-        });
         setContentView(mCardScroller);
 
         mSlider = Slider.from(mCardScroller);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
+            openOptionsMenu();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.refresh:
+                updateInfo();
+                return true;
+            case R.id.toggle_wifi:
+                /*startActivity(new Intent(this, ToggleWifiActivity.class));*/
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     @Override
@@ -82,25 +107,7 @@ public class MainActivity extends Activity {
         super.onResume();
         mCardScroller.activate();
 
-        //get the local wlan ip address
-        String wlanIPAddress = getWlanIPAddress();
-
-        if (wlanIPAddress != null) {
-            // we have an IP address, use it
-            mInfoTable.put("wlan0", wlanIPAddress);
-            // add the ssid we are connected to
-            mInfoTable.put("ssid", getConnectedSSID());
-        } else {
-            // no IP address on wlan0, meaning we are not connected to WiFi
-            mInfoTable.put("wlan0", getString(R.string.wlan_na));
-        }
-
-        // notify that the card UI must be redrawn
-        mCardAdapter.notifyDataSetChanged();
-
-        // get the external IP
-        mExtTask = new GetExternalIPTask();
-        mExtTask.execute();
+        updateInfo();
     }
 
     @Override
@@ -123,6 +130,31 @@ public class MainActivity extends Activity {
         }
 
         super.onPause();
+    }
+
+    private void updateInfo() {
+        // empty the table to avoid info mismatch
+        mInfoTable.clear();
+
+        //get the local wlan ip address
+        String wlanIPAddress = getWlanIPAddress();
+
+        if (wlanIPAddress != null) {
+            // we have an IP address, use it
+            mInfoTable.put("wlan0", wlanIPAddress);
+            // add the ssid we are connected to
+            mInfoTable.put("ssid", getConnectedSSID());
+        } else {
+            // no IP address on wlan0, meaning we are not connected to WiFi
+            mInfoTable.put("wlan0", getString(R.string.wlan_na));
+        }
+
+        // notify that the card UI must be redrawn
+        mCardAdapter.notifyDataSetChanged();
+
+        // get the external IP
+        mExtTask = new GetExternalIPTask();
+        mExtTask.execute();
     }
 
     /**

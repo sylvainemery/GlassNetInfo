@@ -18,4 +18,7 @@
     <string name="http_response_na">n/a</string>
     <string name="http_response_timeout">(timed out)</string>
 
+    <string name="menu_refresh">Refresh</string>
+    <string name="menu_toggle_wifi">Toggle WiFi</string>
+
 </resources>
