@@ -204,7 +204,7 @@ public class MainActivity extends Activity {
         String ssid = wifiInfo.getSSID();
 
         if (ssid == null || ssid.equals("0x")) {
-            ssid = "n/a";
+            ssid = getString(R.string.ssid_na);
         } else if (ssid.startsWith("\"") && ssid.endsWith("\"")) {
             // ssid is often returned with surrounding double quotation marks. We take them off.
             ssid = ssid.substring(1, ssid.length() - 1);

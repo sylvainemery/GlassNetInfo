@@ -4,7 +4,7 @@
         android:icon="@drawable/ic_sync_50"
         android:title="@string/menu_refresh" />
     <item android:id="@+id/toggle_wifi"
-        android:icon="@drawable/ic_world_50"
+        android:icon="@drawable/ic_wifi_50"
         android:title="@string/menu_toggle_wifi" />
 
 </menu>

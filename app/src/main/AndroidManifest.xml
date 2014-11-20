@@ -13,11 +13,11 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@drawable/ic_world_50"
+        android:icon="@drawable/ic_cloud_50"
         android:label="@string/app_name" >
         <activity
             android:name="com.hackncheese.glassnetinfo.MainActivity"
-            android:icon="@drawable/ic_world_50"
+            android:icon="@drawable/ic_cloud_50"
             android:label="@string/title_activity_main" >
             <intent-filter>
                 <action android:name="com.google.android.glass.action.VOICE_TRIGGER" />
@@ -29,7 +29,7 @@
         </activity>
         <activity
             android:name="com.hackncheese.glassnetinfo.ToggleWifiActivity"
-            android:icon="@drawable/ic_world_50"
+            android:icon="@drawable/ic_wifi_50"
             android:label="@string/title_activity_toggle_wifi" >
         </activity>
     </application>

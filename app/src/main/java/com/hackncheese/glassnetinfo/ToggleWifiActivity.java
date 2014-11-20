@@ -30,9 +30,6 @@ public class ToggleWifiActivity extends Activity {
 
     private Slider mSlider;
     private Slider.GracePeriod mGracePeriod;
-
-    private boolean wifiState;
-
     private final GracePeriod.Listener mGracePeriodListener = new GracePeriod.Listener() {
         @Override
         public void onGracePeriodEnd() {
@@ -55,6 +52,7 @@ public class ToggleWifiActivity extends Activity {
             am.playSoundEffect(Sounds.DISMISSED);
         }
     };
+    private boolean wifiState;
 
     @Override
     protected void onCreate(Bundle bundle) {
