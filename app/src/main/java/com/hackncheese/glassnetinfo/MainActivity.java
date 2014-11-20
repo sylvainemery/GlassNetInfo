@@ -11,10 +11,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.Window;
 
 import com.google.android.glass.media.Sounds;
+import com.google.android.glass.view.WindowUtils;
 import com.google.android.glass.widget.CardScrollView;
 import com.google.android.glass.widget.Slider;
 import com.squareup.okhttp.OkHttpClient;
@@ -63,6 +64,9 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
 
+        // Request a voice menu
+        getWindow().requestFeature(WindowUtils.FEATURE_VOICE_COMMANDS);
+
         mCardAdapter = new CardAdapter(this, mInfoTable);
         mCardScroller = new CardScrollView(this);
         mCardScroller.setAdapter(mCardAdapter);
@@ -72,10 +76,14 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main, menu);
-        return true;
+    public boolean onCreatePanelMenu(int featureId, Menu menu) {
+        if (featureId == WindowUtils.FEATURE_VOICE_COMMANDS ||
+                featureId == Window.FEATURE_OPTIONS_PANEL) {
+            getMenuInflater().inflate(R.menu.main, menu);
+            return true;
+        }
+        // Pass through to super to setup touch menu.
+        return super.onCreatePanelMenu(featureId, menu);
     }
 
     @Override
@@ -88,17 +96,20 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.refresh:
-                updateInfo();
-                return true;
-            case R.id.toggle_wifi:
-                startActivity(new Intent(this, ToggleWifiActivity.class));
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        if (featureId == WindowUtils.FEATURE_VOICE_COMMANDS ||
+                featureId == Window.FEATURE_OPTIONS_PANEL) {
+            switch (item.getItemId()) {
+                case R.id.refresh:
+                    updateInfo();
+                    break;
+                case R.id.toggle_wifi:
+                    startActivity(new Intent(this, ToggleWifiActivity.class));
+                    break;
+            }
+            return true;
         }
+        return super.onMenuItemSelected(featureId, item);
     }
 
     @Override
@@ -215,12 +226,13 @@ public class MainActivity extends Activity {
 
     /**
      * Retrieves the content of a URL
+     *
      * @param url : the url of the web page
      * @return the content as a {@link String}
      */
     private String getDataFromUrl(String url) {
         OkHttpClient client = new OkHttpClient();
-        String result = getString(R.string.http_response_na);
+        String result;
 
         // don't wait more than 3 seconds total
         client.setConnectTimeout(1000, TimeUnit.MILLISECONDS);
@@ -248,8 +260,7 @@ public class MainActivity extends Activity {
     private class GetExternalIPTask extends AsyncTask<Void, Void, String> {
         @Override
         protected String doInBackground(Void... p) {
-            String extIp = getDataFromUrl(getString(R.string.url_ip));
-            return extIp;
+            return getDataFromUrl(getString(R.string.url_ip));
         }
 
         protected void onPreExecute() {
