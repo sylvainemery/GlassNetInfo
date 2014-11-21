@@ -16,9 +16,14 @@
     <string name="wlan_na">n/a</string>
     <string name="ssid_na">n/a</string>
     <string name="http_response_na">n/a</string>
-    <string name="http_response_timeout">(timed out)</string>
+    <string name="http_response_timeout">(timeout)</string>
 
     <string name="menu_refresh">Refresh</string>
     <string name="menu_toggle_wifi">Toggle WiFi</string>
+
+    <string name="toggle_wifi_cancel_toggle">Cancel</string>
+    <string name="toggle_wifi_close_activity">Return</string>
+    <string name="toggle_wifi_enable_wifi">Enable WiFi</string>
+    <string name="toggle_wifi_disable_wifi">Disable WiFi</string>
 
 </resources>

@@ -5,19 +5,25 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.AdapterView;
 
 import com.google.android.glass.media.Sounds;
+import com.google.android.glass.view.WindowUtils;
 import com.google.android.glass.widget.CardBuilder;
 import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
 import com.google.android.glass.widget.Slider;
-import com.google.android.glass.widget.Slider.GracePeriod;
 
 /**
  * Toggles the WiFi state
+ * Shows a grace period slider before enabling/disabling WiFi
  */
 public class ToggleWifiActivity extends Activity {
 
@@ -30,7 +36,7 @@ public class ToggleWifiActivity extends Activity {
 
     private Slider mSlider;
     private Slider.GracePeriod mGracePeriod;
-    private final GracePeriod.Listener mGracePeriodListener = new GracePeriod.Listener() {
+    private final Slider.GracePeriod.Listener mGracePeriodListener = new Slider.GracePeriod.Listener() {
         @Override
         public void onGracePeriodEnd() {
             mGracePeriod = null;
@@ -52,12 +58,18 @@ public class ToggleWifiActivity extends Activity {
             am.playSoundEffect(Sounds.DISMISSED);
         }
     };
+
+    //current WiFi state : true = enabled, false = disabled
     private boolean wifiState;
 
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
 
+        // Request a voice menu
+        getWindow().requestFeature(WindowUtils.FEATURE_VOICE_COMMANDS);
+
+        // get the current WiFi state
         WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
         wifiState = wifiManager.isWifiEnabled();
 
@@ -86,23 +98,96 @@ public class ToggleWifiActivity extends Activity {
                 return AdapterView.INVALID_POSITION;
             }
         });
-        // Handle the TAP event.
-        mCardScroller.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                mGracePeriod = Slider.from(parent).startGracePeriod(mGracePeriodListener);
-                mView = buildView();
-                mCardScroller.getAdapter().notifyDataSetChanged();
-                AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                am.playSoundEffect(Sounds.TAP);
-            }
-        });
         setContentView(mCardScroller);
 
+        // when entering the activity, the WiFi toggles directly after the grace period
         mSlider = Slider.from(mCardScroller);
         mGracePeriod = mSlider.startGracePeriod(mGracePeriodListener);
 
         mView = buildView();
+    }
+
+    @Override
+    public boolean onCreatePanelMenu(int featureId, Menu menu) {
+        Log.d(TAG, "onCreatePanelMenu");
+        if (featureId == WindowUtils.FEATURE_VOICE_COMMANDS ||
+                featureId == Window.FEATURE_OPTIONS_PANEL) {
+            getMenuInflater().inflate(R.menu.toggle_wifi, menu);
+            return true;
+        }
+
+        // Pass through to super to setup touch menu.
+        return super.onCreatePanelMenu(featureId, menu);
+    }
+
+    /**
+     * onPreparePanel is called every time the menu is shown
+     * Here, we change what's in the menu based on the current state of the activity:
+     * - if in a grace period, we only show the Cancel item
+     * - if not in a grace period, we offer the choice of toggling WiFi or returning to the previous activity
+     */
+    @Override
+    public boolean onPreparePanel(int featureId, View view, Menu menu) {
+        Log.d(TAG, "onPreparePanel");
+        if (featureId == WindowUtils.FEATURE_VOICE_COMMANDS ||
+                featureId == Window.FEATURE_OPTIONS_PANEL) {
+            if (mGracePeriod == null) {
+                // not in a grace period
+                menu.setGroupVisible(R.id.tw_toggling, false);
+                menu.setGroupVisible(R.id.tw_not_toggling, true);
+                // we change the "Toggle WiFi" menu label to be more precise
+                if (wifiState) {
+                    menu.findItem(R.id.tw_toggle_wifi).setTitle(R.string.toggle_wifi_disable_wifi);
+                } else {
+
+                    menu.findItem(R.id.tw_toggle_wifi).setTitle(R.string.toggle_wifi_enable_wifi);
+                }
+            } else {
+                // in a grace period, we only show the cancel toggling menu item
+                menu.setGroupVisible(R.id.tw_toggling, true);
+                menu.setGroupVisible(R.id.tw_not_toggling, false);
+            }
+            return true;
+        }
+        // Pass through to super to setup touch menu.
+        return super.onPreparePanel(featureId, view, menu);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
+            openOptionsMenu();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        Log.d(TAG, "onMenuItemSelected");
+        if (featureId == WindowUtils.FEATURE_VOICE_COMMANDS ||
+                featureId == Window.FEATURE_OPTIONS_PANEL) {
+            switch (item.getItemId()) {
+                case R.id.tw_toggle_wifi:
+                    // we start a grace period
+                    mGracePeriod = Slider.from(mCardScroller).startGracePeriod(mGracePeriodListener);
+                    mView = buildView();
+                    mCardScroller.getAdapter().notifyDataSetChanged();
+                    break;
+                case R.id.tw_close_activity:
+                    // we go back to the previous activity (if any)
+                    this.onBackPressed();
+                    break;
+                case R.id.tw_cancel_toggle:
+                    // cancel toggle = cancel grace period
+                    mGracePeriod.cancel();
+                    mView = buildView();
+                    mCardScroller.getAdapter().notifyDataSetChanged();
+                    break;
+            }
+            return true;
+        }
+        return super.onMenuItemSelected(featureId, item);
     }
 
     @Override
@@ -150,7 +235,6 @@ public class ToggleWifiActivity extends Activity {
         CardBuilder card = new CardBuilder(this, CardBuilder.Layout.MENU);
 
         String txt;
-        String footnote;
 
         if (mGracePeriod != null) {
             if (wifiState) {
@@ -158,19 +242,15 @@ public class ToggleWifiActivity extends Activity {
             } else {
                 txt = "Turning WiFi on";
             }
-            footnote = "Dismiss to cancel";
         } else {
             if (wifiState) {
                 txt = "WiFi is enabled";
-                footnote = "Tap to turn off";
             } else {
                 txt = "WiFi is disabled";
-                footnote = "Tap to turn on";
             }
         }
 
         card.setText(txt);
-        card.setFootnote(footnote);
         return card.getView();
     }
 

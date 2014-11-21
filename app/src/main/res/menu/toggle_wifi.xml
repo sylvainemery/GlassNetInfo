@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:id="@+id/tw_toggling">
+        <item
+            android:id="@+id/tw_cancel_toggle"
+            android:icon="@drawable/ic_no_50"
+            android:title="@string/toggle_wifi_cancel_toggle" />
+    </group>
+    <group android:id="@+id/tw_not_toggling">
+        <item
+            android:id="@+id/tw_toggle_wifi"
+            android:icon="@drawable/ic_wifi_50"
+            android:title="@string/toggle_wifi_enable_wifi" />
+        <item
+            android:id="@+id/tw_close_activity"
+            android:icon="@drawable/ic_no_50"
+            android:title="@string/toggle_wifi_close_activity" />
+    </group>
+
+</menu>
